@@ -1,0 +1,94 @@
+package com.github.csv2db;
+
+import com.github.csv2db.CsvImporter;
+import com.github.csv2db.LoadResult;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+import org.junit.jupiter.api.Test;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
+import javax.sql.DataSource;
+import java.io.File;
+import java.net.URL;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+
+@Testcontainers
+public class CsvImporterTest {
+
+	@Container
+	private final PostgreSQLContainer postgreSQLContainer = new PostgreSQLContainer<>()
+			.withDatabaseName("test")
+			.withUsername("test")
+			.withPassword("test")
+			.withInitScript("init.sql");
+
+	private final static String CSV_FILE = "table_name.csv";
+	private final static String ZIP_FILE = "test.zip";
+    private final static String EXPECTED_ERROR_MESSAGE = "ERROR: duplicate key value violates unique constraint \"unique_text\"\n" +
+        "  Detail: Key (col_text)=(text_рус) already exists.";
+
+	@Test
+	public void shouldLoadTableFromCsvFile() {
+		CsvImporter csvImporter = new CsvImporter(getDataSource());
+
+		URL url = getClass().getClassLoader().getResource(CSV_FILE);
+
+		List<LoadResult> loadResult = assertDoesNotThrow(() -> csvImporter.load(new File(url.toURI())));
+        assertEquals(1, loadResult.size());
+        assertEquals(expectedCsvLoadResult(), loadResult.get(0));
+	}
+
+	@Test
+	public void shouldLoadTableFromZipFile() {
+		CsvImporter csvImporter = new CsvImporter(getDataSource());
+
+		URL url = getClass().getClassLoader().getResource(ZIP_FILE);
+
+		List<LoadResult> results = assertDoesNotThrow(() -> csvImporter.load(new File(url.toURI())));
+		assertEquals(2, results.size());
+		assertEquals(expectedZipLoadResult_1(), results.get(0));
+		assertEquals(expectedZipLoadResult_2(), results.get(1));
+	}
+
+	private DataSource getDataSource() {
+		HikariConfig hikariConfig = new HikariConfig();
+		hikariConfig.setJdbcUrl(postgreSQLContainer.getJdbcUrl());
+		hikariConfig.setUsername("test");
+		hikariConfig.setPassword("test");
+		return new HikariDataSource(hikariConfig);
+	}
+
+    private LoadResult expectedCsvLoadResult() {
+        return new LoadResult(
+            "table_name.csv",
+            3,
+            2,
+            Stream.of(new LoadResult.SkippedRecord(2, EXPECTED_ERROR_MESSAGE)).collect(Collectors.toList()));
+    }
+
+    private LoadResult expectedZipLoadResult_1() {
+        return new LoadResult(
+            "1-table_name.csv",
+            1,
+            1,
+            Collections.EMPTY_LIST
+        );
+    }
+
+    private LoadResult expectedZipLoadResult_2() {
+        return new LoadResult(
+            "2-table_name.csv",
+            1,
+            0,
+            Stream.of(new LoadResult.SkippedRecord(1, EXPECTED_ERROR_MESSAGE))
+                .collect(Collectors.toList()));
+    }
+}

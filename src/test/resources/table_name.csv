@@ -1,0 +1,4 @@
+col_uuid;col_text;col_timestamp;col_timestamp_now;col_boolean;col_bigint;col_float;col_numeric;col_int
+null;text_рус;2019-11-07 16:30:29.563532;now();true;1;1.4;1.4;1
+null;text_рус;2019-11-07 16:30:29.563532;now();true;1;1.4;1.4;1
+null;blah-blah;2019-11-07 16:30:29.563532;now();true;1;1.4;1.4;1
