@@ -114,7 +114,7 @@ public class CsvImporter {
 	}
 
 	private LoadResult doLoad(File file) {
-		logger.info(String.format("Started loading of master-data for file: %s", file.getName()));
+		logger.info("Started loading of master-data for file: {}", file.getName());
 		int recordIndex = 0;
 		List<LoadResult.SkippedRecord> recordsSkipped = new ArrayList<>();
 
@@ -124,14 +124,14 @@ public class CsvImporter {
 			Map<String, String> columnTypes = getColumnTypes(connection, tableName);
 			Map<String, Integer> headers = csvParser.getHeaderMap();
 			String preparedInsert = prepareInsert(headers, tableName);
-			logger.info(String.format("Prepared statement: %s", preparedInsert));
+			logger.info("Prepared statement: {}", preparedInsert);
 
 			PreparedStatement statement = connection.prepareStatement(preparedInsert);
 			for (CSVRecord record : csvParser.getRecords()) {
 				int columnIndex = 1;
 				++recordIndex;
 				try {
-					logger.info(String.format("Inserting record: %s", recordIndex));
+					logger.info("Inserting record: {}", recordIndex);
 					for (String header : headers.keySet()) {
 						String value = record.get(header);
 						if (isNull(value)) {
@@ -148,14 +148,14 @@ public class CsvImporter {
 						throw new CsvImportException(e);
 					} else {
 						recordsSkipped.add(new LoadResult.SkippedRecord(recordIndex, e.getMessage()));
-						logger.warn(String.format("Record №%s has constraint violation, so it was skipped: %s", recordIndex, e));
+						logger.warn("Record {} has constraint violation, so it was skipped: {}", recordIndex, e);
 					}
 				}
 			}
 		} catch (IOException | SQLException e) {
 			throw new CsvImportException(e);
 		}
-		logger.info(String.format("Successfully processed master-data file: %s", file.getName()));
+		logger.info("Successfully processed master-data file: {}", file.getName());
 
 		return new LoadResult(
 				file.getName(),
@@ -269,8 +269,7 @@ public class CsvImporter {
 		}
 	}
 
-	private String prepareInsert(Map<String, Integer> headerMap,
-			String tableName) {
+	private String prepareInsert(Map<String, Integer> headerMap, String tableName) {
 		String insert = "INSERT INTO \"" + tableName + "\" (%s) VALUES (%s);";
 		String columns = String.join(",", headerMap.keySet());
 		String params = headerMap.keySet().stream()
