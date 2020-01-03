@@ -30,10 +30,8 @@ import javax.sql.DataSource;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
-import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +45,7 @@ public class CsvImporter {
 	private static final String GET_TABLE_STRUCTURE = "SELECT * " +
 			"FROM information_schema.columns " +
 			"WHERE table_schema = ?" +
-			"    AND table_name   = ?";
+			"    AND table_name = ?";
 
 	private final DataSource dataSource;
 
@@ -147,7 +145,7 @@ public class CsvImporter {
 					if (!CONSTRAINT_VIOLATION.equals(e.getSQLState())) {
 						throw new CsvImportException(e);
 					} else {
-						recordsSkipped.add(new LoadResult.SkippedRecord(recordIndex, e.getMessage()));
+						recordsSkipped.add(new LoadResult.SkippedRecord(recordIndex, e));
 						logger.warn("Record {} has constraint violation, so it was skipped: {}", recordIndex, e);
 					}
 				}
@@ -180,36 +178,6 @@ public class CsvImporter {
 		return filename;
 	}
 
-	public Table getTableInfo(String tableName) {
-		List<Table.Column> columns = new ArrayList<>();
-		try (Connection connection = dataSource.getConnection()) {
-			PreparedStatement statement = connection.prepareStatement(GET_TABLE_STRUCTURE);
-			statement.setString(1, connection.getSchema());
-			statement.setString(2, tableName);
-			ResultSet resultSet = statement.executeQuery();
-
-			while (resultSet.next()) {
-				columns.add(new Table.Column(
-						resultSet.getString("column_name"),
-						resultSet.getString("is_nullable"),
-						resultSet.getString("data_type"),
-						resultSet.getString("character_maximum_length")));
-			}
-		} catch (Exception e) {
-			throw new TableInfoException(e);
-		}
-
-		StringBuilder stringBuilder = new StringBuilder();
-		try (CSVPrinter printer = new CSVPrinter(stringBuilder, CSVFormat.DEFAULT)) {
-			for (Table.Column column : columns) {
-				printer.print(column.name);
-			}
-			return new Table(tableName, columns);
-		} catch (Exception e) {
-			throw new TableInfoException(e);
-		}
-	}
-
 	private Map<String, String> getColumnTypes(Connection connection, String tableName) throws SQLException {
 		Map<String, String> columnTypes = new HashMap<>();
 		PreparedStatement statement = connection.prepareStatement(GET_TABLE_STRUCTURE);
@@ -238,7 +206,7 @@ public class CsvImporter {
 			throw new IllegalArgumentException("No database column found by csv header=" + header);
 		}
 
-		if (StringUtils.isBlank(value)) {
+		if (null == value || value.isBlank()) {
 			return null;
 		}
 
