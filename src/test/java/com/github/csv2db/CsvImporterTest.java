@@ -13,17 +13,17 @@ import javax.sql.DataSource;
 import java.io.File;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 @Testcontainers
 public class CsvImporterTest {
 
+	@SuppressWarnings("rawtypes")
 	@Container
 	private final PostgreSQLContainer postgreSQLContainer = new PostgreSQLContainer<>()
 			.withDatabaseName("test")
@@ -36,12 +36,12 @@ public class CsvImporterTest {
 	private final static String ZIP_FILE = "test.zip";
 
 	@Test
-	public void shouldLoadTableFromCsvFile() {
+	public void shouldLoadTableFromCsvFile() throws URISyntaxException {
 		CsvImporter csvImporter = new CsvImporter(getDataSource());
 
 		URL url = getClass().getClassLoader().getResource(CSV_FILE);
 
-		List<LoadResult> loadResult = assertDoesNotThrow(() -> csvImporter.load(new File(url.toURI())));
+		List<LoadResult> loadResult = csvImporter.load(new File(url.toURI()));
         assertEquals(1, loadResult.size());
         assertEquals(expectedCsvLoadResult(), loadResult.get(0));
 	}
@@ -79,7 +79,7 @@ public class CsvImporterTest {
             "1-table_name.csv",
             1,
             1,
-            Collections.EMPTY_LIST
+            new ArrayList<LoadResult.SkippedRecord>()
         );
     }
 

@@ -82,4 +82,10 @@ public class LoadResult {
     public int hashCode() {
         return Objects.hash(fileName, totalRecords, insertedRecords, skippedRecords);
     }
+
+	@Override
+	public String toString() {
+		return "LoadResult [fileName=" + fileName + ", totalRecords=" + totalRecords + ", insertedRecords="
+				+ insertedRecords + ", skippedRecords=" + skippedRecords + "]";
+	}
 }

@@ -7,21 +7,21 @@
     <packaging>jar</packaging>
 
     <name>csv2db</name>
-    <description>Import data of csv files into database</description>
+    <description>Load data from csv-files or zipped csv-files into database table</description>
 
     <properties>
         <java.version>1.8</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <maven.repo.url>http://nexus.utrace.ru:8081</maven.repo.url>
 
         <lombok.version>1.18.6</lombok.version>
         <commons-csv.version>1.7</commons-csv.version>
         <commons-io.version>2.5</commons-io.version>
-        <slf4j.version>1.7.28</slf4j.version>
+        <slf4j.version>1.7.29</slf4j.version>
 
         <junit.version>5.5.2</junit.version>
         <mockito.version>2.23.0</mockito.version>
+        <testcontainers.version>1.12.3</testcontainers.version>
 
         <maven-surefire-plugin.version>2.22.1</maven-surefire-plugin.version>
     </properties>
@@ -47,26 +47,26 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
-            <version>1.7.29</version>
+            <version>${slf4j.version}</version>
         </dependency>
 
         <!--Test-->
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers</artifactId>
-            <version>1.12.3</version>
+            <version>${testcontainers.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>postgresql</artifactId>
-            <version>1.12.3</version>
+            <version>${testcontainers.version}</version>
 	        <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>junit-jupiter</artifactId>
-            <version>1.12.3</version>
+            <version>${testcontainers.version}</version>
 		    <scope>test</scope>
 		</dependency>
 		<dependency>
