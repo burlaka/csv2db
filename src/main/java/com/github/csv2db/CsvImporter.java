@@ -32,6 +32,7 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,10 +43,8 @@ public class CsvImporter {
 	private static final String ZIP_EXT = "zip";
 	private static final String CONSTRAINT_VIOLATION = "23505";
 
-	private static final String GET_TABLE_STRUCTURE = "SELECT * " +
-			"FROM information_schema.columns " +
-			"WHERE table_schema = ?" +
-			"    AND table_name = ?";
+	private static final String GET_TABLE_STRUCTURE = "SELECT * " + "FROM information_schema.columns "
+			+ "WHERE table_schema = ?" + "    AND table_name = ?";
 
 	private final DataSource dataSource;
 
@@ -55,17 +54,16 @@ public class CsvImporter {
 
 	public List<LoadResult> load(File file) {
 		switch (FilenameUtils.getExtension(file.getName())) {
-			case CSV_EXT: {
-				return Stream.of(doLoad(file)).collect(Collectors.toList());
-			}
-			case ZIP_EXT: {
-				List<File> unzipped = unZip(file).stream()
-						.sorted(Comparator.comparing(File::getName))
-						.collect(Collectors.toList());
-				return doLoad(unzipped);
-			}
-			default:
-				throw new CsvImportException("Unsupported file format! Only csv and zip");
+		case CSV_EXT: {
+			return Stream.of(doLoad(file)).collect(Collectors.toList());
+		}
+		case ZIP_EXT: {
+			List<File> unzipped = unZip(file).stream().sorted(Comparator.comparing(File::getName))
+					.collect(Collectors.toList());
+			return doLoad(unzipped);
+		}
+		default:
+			throw new CsvImportException("Unsupported file format! Only csv and zip");
 		}
 	}
 
@@ -117,7 +115,8 @@ public class CsvImporter {
 		List<LoadResult.SkippedRecord> recordsSkipped = new ArrayList<>();
 
 		try (Connection connection = dataSource.getConnection();
-				CSVParser csvParser = new CSVParser(new FileReader(file), CSVFormat.DEFAULT.withHeader().withDelimiter(';'))) {
+				CSVParser csvParser = new CSVParser(new FileReader(file),
+						CSVFormat.DEFAULT.withHeader().withDelimiter(';'))) {
 			String tableName = getTableName(file);
 			Map<String, String> columnTypes = getColumnTypes(connection, tableName);
 			Map<String, Integer> headers = csvParser.getHeaderMap();
@@ -155,11 +154,7 @@ public class CsvImporter {
 		}
 		logger.info("Successfully processed master-data file: {}", file.getName());
 
-		return new LoadResult(
-				file.getName(),
-				recordIndex,
-				recordIndex - recordsSkipped.size(),
-				recordsSkipped);
+		return new LoadResult(file.getName(), recordIndex, recordIndex - recordsSkipped.size(), recordsSkipped);
 	}
 
 	private boolean isNow(String value) {
@@ -196,17 +191,14 @@ public class CsvImporter {
 		}
 	}
 
-	private Object convert(
-			String header,
-			String value,
-			Map<String, String> columnTypes) {
+	private Object convert(String header, String value, Map<String, String> columnTypes) {
 		String columnType = columnTypes.get(header.toLowerCase());
 
 		if (columnType == null) {
 			throw new IllegalArgumentException("No database column found by csv header=" + header);
 		}
 
-		if (null == value || value.isBlank()) {
+		if (null == value || StringUtils.isBlank(value)) {
 			return null;
 		}
 
@@ -215,34 +207,32 @@ public class CsvImporter {
 		}
 
 		switch (columnType) {
-			case "date":
-				return LocalDate.parse(value);
-			case "timestamp with time zone":
-			case "timestamp without time zone":
-				return Timestamp.valueOf(value);
-			case "uuid":
-				return UUID.fromString(value);
-			case "boolean":
-				return Boolean.valueOf(value);
-			case "smallint":
-			case "integer":
-				return Integer.valueOf(value);
-			case "bigint":
-				return Long.valueOf(value);
-			case "numeric":
-			case "double precision":
-				return Double.valueOf(value);
-			default:
-				return value;
+		case "date":
+			return LocalDate.parse(value);
+		case "timestamp with time zone":
+		case "timestamp without time zone":
+			return Timestamp.valueOf(value);
+		case "uuid":
+			return UUID.fromString(value);
+		case "boolean":
+			return Boolean.valueOf(value);
+		case "smallint":
+		case "integer":
+			return Integer.valueOf(value);
+		case "bigint":
+			return Long.valueOf(value);
+		case "numeric":
+		case "double precision":
+			return Double.valueOf(value);
+		default:
+			return value;
 		}
 	}
 
 	private String prepareInsert(Map<String, Integer> headerMap, String tableName) {
 		String insert = "INSERT INTO \"" + tableName + "\" (%s) VALUES (%s);";
 		String columns = String.join(",", headerMap.keySet());
-		String params = headerMap.keySet().stream()
-				.map(n -> "?")
-				.collect(Collectors.joining(","));
+		String params = headerMap.keySet().stream().map(n -> "?").collect(Collectors.joining(","));
 		return String.format(insert, columns, params);
 	}
 }
